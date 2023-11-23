@@ -1,17 +1,65 @@
 plugins {
     id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = 'net.cublix'
-version = '1.0-SNAPSHOT'
+version = '2.0.4'
+java.sourceCompatibility = java.targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation 'com.zaxxer:HikariCP:5.1.0'
+    implementation 'com.zaxxer:HikariCP:3.4.5'
+    implementation 'org.jetbrains:annotations:24.0.0'
+    implementation 'com.google.guava:guava:32.1.3-jre'
+
+    compileOnly "org.apache.logging.log4j:log4j-api:2.19.0"
 
     compileOnly 'org.projectlombok:lombok:1.18.28'
     annotationProcessor 'org.projectlombok:lombok:1.18.28'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.28'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.28'
+
+    testImplementation 'org.mariadb.jdbc:mariadb-java-client:3.3.0'
+    testImplementation "org.apache.logging.log4j:log4j-core:2.19.0"
+    testImplementation "org.apache.logging.log4j:log4j-api:2.19.0"
+    testImplementation "org.apache.logging.log4j:log4j-slf4j2-impl:2.19.0"
+    testImplementation "org.slf4j:slf4j-api:2.0.7"
+}
+
+shadowJar {
+    shadowJar.archiveClassifier = ''
+}
+
+tasks.register('sourceJar', Jar) {
+    from sourceSets.main.allJava
+    sourceJar.archiveClassifier = 'sources'
+}
+
+publishing {
+    repositories {
+        maven {
+            url 'https://repo.cublix.net/repository/maven-releases'
+            allowInsecureProtocol = true
+            credentials {
+                username = System.getenv('CUBLIX_REPOSITORY_USER')
+                password = System.getenv('CUBLIX_REPOSITORY_PASSWORD')
+            }
+        }
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            artifact shadowJar
+            artifact sourceJar
+            groupId = this.group
+            artifactId = rootProject.name
+            version = this.version
+        }
+    }
 }
